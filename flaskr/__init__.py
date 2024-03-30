@@ -19,22 +19,21 @@ cred = credentials.Certificate("key.json")
 
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
-db.collection("paragraphs").document("0").set({"Title": "Games at GDC", "Length": 24})
     
 try:
     os.makedirs(app.instance_path)
 except OSError:
     pass
     
-@app.route("/register") 
+@app.route("/register", methods = ['POST']) 
 def register_email_password():
-    email = "test@gmail.com" #request.args.get('email')
-    password = "testpassword"#request.args.get('email')
+    email = request.json.get('email')
+    password = request.json.get('email')
     
     try:
         user = auth.create_user(email = email, password = password)
         
-        userInfo = {"email": email, "password": password, "responses": [], "goal": ""} #etc
+        userInfo = {"email": email, "password": password, "responses": [], "goal": 0} #etc
         
         userDoc = db.collection("users").document(user.uid)
         userDoc.set(userInfo);
@@ -44,10 +43,10 @@ def register_email_password():
         return e.__str__()
     
     
-@app.route("/signin") 
+@app.route("/signin", methods = ['POST']) 
 def sign_into_email():
-    email = "test@gmail.com" #request.args.get('email')
-    password = "testpassword"#request.args.get('email')
+    email = request.json.get('email')
+    password = request.json.get('email')
     
     try:
         user = auth.get_user_by_email(email = email)
@@ -63,7 +62,7 @@ def sign_into_email():
         return e.__str__()
     
 
-@app.route('/paragraph')
+@app.route('/generate_paragraph', methods = ['GET'])
 def get_paragraph():
     #given a paragraph id, probably random, making sure it isn't one the user hasn't read
     #return a paragraph JSON based on what we expect
@@ -73,15 +72,31 @@ def get_paragraph():
         return jsonify(doc.to_dict())
     except Exception as e:
         return f"Error: {e}"
+    
+
+# @app.route('/get_response', methods = ['POST'])
+# def get_response():
+#     id = request.json.get('id', None)
+#     sessionID = request.json.get('sessionID', None)
+    
+#     try:
+#         if id:
+#             #return that response iff it belongs to the user
+#         else:
+            
+    
 
 
 
-@app.route('/analyze')
+@app.route('/analyze', methods = ['POST'])
 def analyze():
+    params = request.json
     #upon submission of text, get response
-    try: 
-        summary = request.args.get('summary')
-        textReadID = request.args.get('textReadID')
+    try:
+        summary = params['summary']
+        textReadID = params['textReadID']
+        readTime = params['readTime']
+        readDuration = params['readTime']
         #summary = "hello" #for debugging
         if(summary):
             doc = db.collection("paragraphs").document(f"{textReadID}").get()
