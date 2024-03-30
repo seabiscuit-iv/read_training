@@ -4,7 +4,11 @@ from flask import Flask, request, jsonify, render_template
 import firebase_admin
 from firebase_admin import firestore
 from firebase_admin import credentials
+<<<<<<< HEAD
+from google.auth.transport import requests
+=======
 import requests
+>>>>>>> 1b1c419e2ba011dfe8f158b9bcd9d0256a0964f3
 
 __name__ = 'LearnApp'
 
@@ -53,6 +57,8 @@ def hello():
     except Exception as e:
         return f"Error: {e}"
 
+
+
 @app.route('/analyze')
 def analyze():
     #upon submission of text, get response
@@ -60,23 +66,23 @@ def analyze():
         summary = request.args.get('summary')
         #summary = "hello" #for debugging
         if(summary):
-            #analyze summary, get JSON form response
-            response = {"Text": "Feedback", "Reading time"}
             
-            data_to_send = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
+            #analyze summary, get JSON form response
+            response = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
             aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=data_to_send)
             aiGeneratedSummary = aiResponse["model_summary"]
             aiFeedback = aiResponse["model_response"]
             aiSemanticSimilarity = aiResponse["cosine_scores"]
             
-                        doc = db.collection("responses").document()
+            #store response in data
+            doc = db.collection("responses").document()
             doc.set(response)
             id = doc.id
             
-            #store response in data
+            #store response id with user(after getting active user with auth)
             
             #return response
-            return aiGeneratedSummary, aiFeedback, aiSemanticSimilarityjsonify(response)
+            return aiGeneratedSummary, aiFeedback, aiSemanticSimilarity
         else:
             #reload site and present error msg
             return f"Please submit a summary"
