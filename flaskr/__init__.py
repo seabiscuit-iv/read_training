@@ -60,8 +60,11 @@ def analyze():
     #upon submission of text, get response
     try: 
         summary = request.args.get('summary')
+        textReadID = request.args.get('textReadID')
         #summary = "hello" #for debugging
         if(summary):
+            doc = db.collection("paragraphs").document(f"{textReadID}").get()
+            textRead = doc.to_dict()["text"]
             
             #analyze summary, get JSON form response
             response = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
