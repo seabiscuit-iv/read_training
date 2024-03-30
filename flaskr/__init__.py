@@ -4,11 +4,7 @@ from flask import Flask, request, jsonify, render_template
 import firebase_admin
 from firebase_admin import firestore
 from firebase_admin import credentials
-<<<<<<< HEAD
-from google.auth.transport import requests
-=======
 import requests
->>>>>>> 1b1c419e2ba011dfe8f158b9bcd9d0256a0964f3
 
 __name__ = 'LearnApp'
 
