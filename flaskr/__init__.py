@@ -86,7 +86,6 @@ def analyze():
         if(summary):
             doc = db.collection("paragraphs").document(f"{textReadID}").get()
             textRead = doc.to_dict()["text"]
-            
             #analyze summary, get JSON form response
             response = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
             aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response)
@@ -96,13 +95,17 @@ def analyze():
             
             #store response in data
             doc = db.collection("responses").document()
-            doc.set(response)
+            doc.set(aiResponse)
             id = doc.id
             
             #store response id with user(after getting active user with auth)
             
+            #model summary : the summary that the model generated,
+            #model_response : the feedback that the model provides, 
+            #semantic similarity : the feedback that the model provides
+
             #return response
-            return aiGeneratedSummary, aiFeedback, aiSemanticSimilarity
+            return aiResponse 
         else:
             #reload site and present error msg
             return f"Please submit a summary"
