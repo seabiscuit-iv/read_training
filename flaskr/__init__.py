@@ -1,9 +1,10 @@
 import os
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import firebase_admin
 from firebase_admin import firestore
 from firebase_admin import credentials
+from google.auth.transport import requests
 
 __name__ = 'LearnApp'
 
@@ -23,6 +24,23 @@ try:
     os.makedirs(app.instance_path)
 except OSError:
     pass
+    
+@app.route("/signin") 
+def sign_in_email_password():
+    email = request.args.get('email')
+    password = request.args.get('email')
+    
+    payload = json.dumps({"email":email, "password":password})
+    FIREBASE_WEB_API_KEY = 'the web API key here' 
+    rest_api_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
+
+    r = requests.Request(["POST"], rest_api_url,
+                  params={"key": FIREBASE_WEB_API_KEY},
+                  data=payload)
+
+    print(r.json())
+    return r.json()
+    
 
 @app.route('/paragraph')
 def hello():
@@ -41,14 +59,20 @@ def analyze():
     #upon submission of text, get response
     try: 
         summary = request.args.get('summary')
+        #summary = "hello" #for debugging
         if(summary):
             #analyze summary, get JSON form response
-            response = {"Text": "Feedback", "Reading time"}
+            response = {"Text": "Feedback", "Reading time": 25} #etc
             
             #store response in data
+            doc = db.collection("responses").document()
+            doc.set(response)
+            id = doc.id
+            
+            #store response id with user(after getting active user with auth)
             
             #return response
-            return 
+            return jsonify(response)
         else:
             #reload site and present error msg
             return f"Please submit a summary"
