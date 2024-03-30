@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, render_template
 import firebase_admin
 from firebase_admin import firestore
 from firebase_admin import credentials
-from google.auth.transport import requests
+import requests
 
 __name__ = 'LearnApp'
 
@@ -52,8 +52,7 @@ def hello():
         return jsonify(doc.to_dict())
     except Exception as e:
         return f"Error: {e}"
-    
-    
+
 @app.route('/analyze')
 def analyze():
     #upon submission of text, get response
@@ -62,17 +61,22 @@ def analyze():
         #summary = "hello" #for debugging
         if(summary):
             #analyze summary, get JSON form response
-            response = {"Text": "Feedback", "Reading time": 25} #etc
+            response = {"Text": "Feedback", "Reading time"}
             
-            #store response in data
-            doc = db.collection("responses").document()
+            data_to_send = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
+            aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=data_to_send)
+            aiGeneratedSummary = aiResponse["model_summary"]
+            aiFeedback = aiResponse["model_response"]
+            aiSemanticSimilarity = aiResponse["cosine_scores"]
+            
+                        doc = db.collection("responses").document()
             doc.set(response)
             id = doc.id
             
-            #store response id with user(after getting active user with auth)
+            #store response in data
             
             #return response
-            return jsonify(response)
+            return aiGeneratedSummary, aiFeedback, aiSemanticSimilarityjsonify(response)
         else:
             #reload site and present error msg
             return f"Please submit a summary"
