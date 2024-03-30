@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, render_template
 import firebase_admin
 from firebase_admin import firestore
 from firebase_admin import credentials
+from firebase_admin import auth
 import requests
 
 __name__ = 'LearnApp'
@@ -25,25 +26,45 @@ try:
 except OSError:
     pass
     
-@app.route("/signin") 
-def sign_in_email_password():
-    email = request.args.get('email')
-    password = request.args.get('email')
+@app.route("/register") 
+def register_email_password():
+    email = "test@gmail.com" #request.args.get('email')
+    password = "testpassword"#request.args.get('email')
     
-    payload = json.dumps({"email":email, "password":password})
-    FIREBASE_WEB_API_KEY = 'the web API key here' 
-    rest_api_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
-
-    r = requests.Request(["POST"], rest_api_url,
-                  params={"key": FIREBASE_WEB_API_KEY},
-                  data=payload)
-
-    print(r.json())
-    return r.json()
+    try:
+        user = auth.create_user(email = email, password = password)
+        
+        userInfo = {"email": email, "password": password, "responses": [], "goal": ""} #etc
+        
+        userDoc = db.collection("users").document(user.uid)
+        userDoc.set(userInfo);
+        
+        return "User successfully created" 
+    except Exception as e:
+        return e.__str__()
+    
+    
+@app.route("/signin") 
+def sign_into_email():
+    email = "test@gmail.com" #request.args.get('email')
+    password = "testpassword"#request.args.get('email')
+    
+    try:
+        user = auth.get_user_by_email(email = email)
+        userInfo = db.collection("users").document(user.uid).get();
+        realPW = userInfo.__getattribute__("password");
+        if password == realPW:
+            #sign into queried account, set active sessionID to user
+            return(f"Successfully signed into {email}")
+        else:
+            return("incorrect password")
+        
+    except Exception as e:
+        return e.__str__()
     
 
 @app.route('/paragraph')
-def hello():
+def get_paragraph():
     #given a paragraph id, probably random, making sure it isn't one the user hasn't read
     #return a paragraph JSON based on what we expect
     id = 0
@@ -68,7 +89,7 @@ def analyze():
             
             #analyze summary, get JSON form response
             response = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
-            aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=data_to_send)
+            aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response)
             aiGeneratedSummary = aiResponse["model_summary"]
             aiFeedback = aiResponse["model_response"]
             aiSemanticSimilarity = aiResponse["cosine_scores"]
