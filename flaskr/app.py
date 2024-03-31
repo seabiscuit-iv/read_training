@@ -147,11 +147,11 @@ def analyze():
         id = doc.id
         
         #store response id with user(after getting active user with auth)
+        print(userId)
         users = db.collection("users").document(str(userId))
-        sm = users.get()
+        sm = users.get().to_dict()
         print(sm)
-        #to_dict()
-        sm['responses']
+        # sm['responses']
         
         #model summary : the summary that the model generated,
         #model_response : the feedback that the model provides, 
