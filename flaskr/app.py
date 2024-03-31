@@ -83,6 +83,16 @@ def get_paragraph():
     random = Random()
     i = random.randint(0, c-1)
     return docs[i].to_dict()
+
+@app.route('/get_all_paragraphs', methods = ['GET'])
+def get_all_paragraphs():
+    #given a paragraph id, probably random, making sure it isn't one the user hasn't read
+    #return a paragraph JSON based on what we expect
+    docs = db.collection("paragraphs").get()
+    paragraphs = []
+    for doc in docs:
+        paragraphs.append(doc.to_dict())
+    return paragraphs
     
     
 
