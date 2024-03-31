@@ -9,7 +9,6 @@ from google.cloud.firestore import FieldFilter
 from firebase_admin import credentials
 from firebase_admin import auth
 import requests
-from cryptography.fernet import Fernet
 
 
 __name__ = 'LearnApp' 
@@ -26,11 +25,6 @@ cred = credentials.Certificate("./key.json")
 
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
-
-with open('./fernetkey.txt', 'r') as file:
-    fernetKey = file.read().rstrip()
-        
-fernet = Fernet(fernetKey)
 
 try:
     os.makedirs(app.instance_path)
@@ -73,7 +67,7 @@ def sign_into_email():
         realPW = userInfo.get('password')
         if bcrypt.check_password_hash(realPW, password):
             #sign into queried account, set active sessionID to user
-            sessionID = str(fernet.encrypt(user.uid.encode()))
+            sessionID = user.uid
             return {'sessionID' :sessionID}
         else:
             return jsonify("incorrect password")
@@ -99,7 +93,7 @@ def get_response():
     id = request.json.get('id', None)
     sessionID = request.json.get('sessionID', None)
     sessionID = bytes(sessionID, 'utf-8')
-    userID = fernet.decrypt(sessionID).decode();
+    userID = sessionID
     
     try:
         if id:
@@ -121,7 +115,7 @@ def get_response():
 
 @app.route('/analyze', methods = ['POST'])
 def analyze():
-    params = request.json
+    params = request.json   
     #upon submission of text, get response
     try:
         summary = params['summary']
@@ -134,7 +128,7 @@ def analyze():
         if not sessionID: return jsonify("No active session")
         
         sessionID = bytes(sessionID, 'utf-8')
-        userId = fernet.decrypt(sessionID).decode();
+        userId = sessionID
         #summary = "hello" #for debugging
         if(summary):
             doc = db.collection("paragraphs").document(f"{textReadID}").get()
