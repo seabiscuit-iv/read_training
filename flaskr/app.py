@@ -146,6 +146,7 @@ def analyze():
         print(userId)
         users = db.collection("users").document(str(userId)).get().to_dict()
         users['responses'].append(id)
+        doc = db.collection("users").document(str(userId)).set(users)
         
         #model summary : the summary that the model generated,
         #model_response : the feedback that the model provides, 
