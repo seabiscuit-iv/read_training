@@ -48,7 +48,7 @@ def register_email_password():
     userInfo = {"email": email, "password": password, "responses": [], "goal": 0} #etc
     
     userDoc = db.collection("users").document(user.uid)
-    userDoc.set(userInfo);
+    userDoc.set(userInfo)
     print(userDoc.get().to_dict())
     return jsonify({"email": userDoc.get().to_dict()["email"]})
     
@@ -92,7 +92,10 @@ def get_all_paragraphs():
     docs = db.collection("paragraphs").get()
     paragraphs = []
     for doc in docs:
-        paragraphs.append(doc.to_dict())
+        id = doc.id
+        dct = doc.to_dict()
+        dct['id'] = id
+        paragraphs.append(dct)
     return paragraphs
     
     
@@ -114,7 +117,7 @@ def get_response():
         for doc in docs:
             m = doc.to_dict()
             m['id'] = doc.id
-            resps.append(doc) 
+            resps.append(doc.to_dict()) 
         return {'list':resps}
 
 
@@ -142,8 +145,8 @@ def analyze():
         aiGeneratesdSummary = aiResponse["model_summary"]
         aiFeedback = aiResponse["model_response"]
         aiSemanticSimilarity = aiResponse["cosine_scores"]
-        
-        resp = {'aiResponse':aiResponse, 'id':id, 'title':title, 'author':userId, 'readTime':readTime, 'weekday':weekday, }
+        con = len(textRead)/len(summary)
+        resp = {'aiResponse':aiResponse, 'id':id, 'title':title, 'author':userId, 'readTime':readTime, 'weekday':weekday, 'conciseness':con}
 
         #store response in data
         doc = db.collection("responses").document()
@@ -179,4 +182,30 @@ def addText():
     skinned = {'title': title, 'difficulty':difficulty, 'text':text, 'length':length, 'image':image, 'topic':topic, 'tags':tags}
     db.collection("paragraphs").document().set(skinned)
     return jsonify(f"Text added: {title}")
+    
+
+@app.route('/globalMetrics', methods = ['POST'])
+def globalMetrics():
+    params = request.json
+    userId = params['userId']
+    count = 0
+    conciseness = 0
+    difficulty = 0
+    accuracy = 0
+    docs = db.collection("responses").where(filter=FieldFilter("author", "==", userId)).stream()
+    for doc in docs:
+        m = doc.to_dict()
+        conciseness += m['conciseness']
+        accuracy += m['aiResponse']['cosine_scores']
+        m = db.collection("paragraphs").document(id).get().to_dict()
+        difficulty += m['difficulty']
+        count += 1
+    
+    conciseness /= count
+    difficulty /= count
+    accuracy /= count
+    
+    return jsonify({'conciseness':conciseness, 'difficulty':difficulty, 'accuracy':accuracy})
+    
+        
     
