@@ -43,7 +43,7 @@ def register_email_password():
     password = request.json.get('password')
     
     if(not email or not password):
-        jsonify('Please fill out all fields', 400)
+        return jsonify(error = 'Please fill out all fields', errorcode = 400)
     
     try:
         user = auth.create_user(email = email, password = password)
@@ -54,9 +54,9 @@ def register_email_password():
         userDoc = db.collection("users").document(user.uid)
         userDoc.set(userInfo);
         
-        return json.dumps(userDoc.get().to_dict)
+        return json.dumps(userDoc.get().to_dict())
     except Exception as e:
-        return e.__str__()
+        return jsonify(error = e.__str__(), errorcode = 400)
     
     
 @app.route("/signin", methods = ['POST']) 
@@ -65,7 +65,7 @@ def sign_into_email():
     password = request.json.get('password', None)
     
     if(not email or not password):
-        return jsonify('Please fill out all fields', 400)
+        return jsonify(error = 'Please fill out all fields', errorcode = 400)
     
     
     try:
@@ -80,7 +80,7 @@ def sign_into_email():
             return("incorrect password")
         
     except Exception as e:
-        return e.__str__()
+        return jsonify(error = e.__str__(), errorcode = 400)
 
 
 @app.route('/generate_paragraph', methods = ['GET'])
@@ -92,7 +92,7 @@ def get_paragraph():
         doc = db.collection("paragraphs").document(f"{id}").get()
         return jsonify(doc.to_dict())
     except Exception as e:
-        return f"Error: {e}"
+        return jsonify(error = e.__str__(), errorcode = 400)
     
 
 @app.route('/get_response', methods = ['POST'])
