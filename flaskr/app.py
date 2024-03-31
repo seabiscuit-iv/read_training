@@ -168,7 +168,7 @@ def analyze():
 @app.route ('/addText', methods = ['POST'])
 def addText():
     params = request.json
-    skinned = {'title': params['title'], 'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image']}
+    skinned = {'title': params['title'], 'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image'], 'topic':params['topic']}
     db.collection("paragraphs").document().set(skinned)
     return jsonify(f"Text added: {params['title']}")
     return jsonify(f"Error: {e}")
