@@ -91,9 +91,7 @@ def get_paragraph():
 @app.route('/get_response', methods = ['POST'])
 def get_response():
     id = request.json.get('id', None)
-    sessionID = request.json.get('sessionID', None)
-    sessionID = bytes(sessionID, 'utf-8')
-    userID = sessionID
+    userID = request.json.get('sessionID', None)
     
     try:
         if id:
@@ -136,7 +134,7 @@ def analyze():
         aiSemanticSimilarity = aiResponse["cosine_scores"]
         
         resp = {'aiResponse':aiResponse, 'author':userId}
-        
+
         #store response in data
         doc = db.collection("responses").document()
         doc.set(resp)
