@@ -122,12 +122,8 @@ def analyze():
     readTime = params['readTime']
     readDuration = params['readDuration']
     userId = params['sessionID']
-    sessionID = params.get('sessionID', None)
     
-    if not sessionID: return jsonify("No active session")
-    
-    sessionID = bytes(sessionID, 'utf-8')
-    userId = sessionID
+    if not userId: return jsonify("No active session")
     #summary = "hello" #for debugging
     if(summary):
         doc = db.collection("paragraphs").document(f"{textReadID}").get()
@@ -148,10 +144,8 @@ def analyze():
         
         #store response id with user(after getting active user with auth)
         print(userId)
-        users = db.collection("users").document("YhP55lkNjVg9Je3DJROGcwibJij1")
-        sm = users.get().to_dict()
-        print(sm)
-        # sm['responses']
+        users = db.collection("users").document(str(userId)).get().to_dict()
+        users['responses'].append(id)
         
         #model summary : the summary that the model generated,
         #model_response : the feedback that the model provides, 
