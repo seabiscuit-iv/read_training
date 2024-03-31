@@ -52,7 +52,7 @@ def register_email_password():
         userDoc = db.collection("users").document(user.uid)
         userDoc.set(userInfo);
         
-        return "User successfully created" 
+        return json.dumps(userDoc.get().to_dict)
     except Exception as e:
         return e.__str__()
     
@@ -73,7 +73,7 @@ def sign_into_email():
         if bcrypt.check_password_hash(realPW, password):
             #sign into queried account, set active sessionID to user
             sessionID = fernet.encrypt(user.uid.encode())
-            return sessionID
+            return {'sessionID' :sessionID}
         else:
             return("incorrect password")
         
@@ -127,6 +127,7 @@ def analyze():
         textReadID = params['textReadID']
         readTime = params['readTime']
         readDuration = params['readDuration']
+        userId = params['userId']
         #summary = "hello" #for debugging
         if(summary):
             doc = db.collection("paragraphs").document(f"{textReadID}").get()
@@ -144,6 +145,7 @@ def analyze():
             id = doc.id
             
             #store response id with user(after getting active user with auth)
+            
             
             #model summary : the summary that the model generated,
             #model_response : the feedback that the model provides, 
