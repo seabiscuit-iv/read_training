@@ -22,12 +22,12 @@ app.config.from_mapping(
 )
 app.config.from_pyfile('config.py', silent=True)
 
-cred = credentials.Certificate("../key.json")
+cred = credentials.Certificate("./key.json")
 
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-with open('../fernetkey.txt', 'r') as file:
+with open('./fernetkey.txt', 'r') as file:
     fernetKey = file.read().rstrip()
         
 fernet = Fernet(fernetKey)
@@ -43,7 +43,7 @@ def register_email_password():
     password = request.json.get('password')
     
     if(not email or not password):
-        return jsonify(error = 'Please fill out all fields', errorcode = 400)
+        jsonify('Please fill out all fields', 400)
     
     try:
         user = auth.create_user(email = email, password = password)
@@ -53,10 +53,10 @@ def register_email_password():
         
         userDoc = db.collection("users").document(user.uid)
         userDoc.set(userInfo);
-        
-        return json.dumps(userDoc.get().to_dict())
+        print(userDoc.get().to_dict())
+        return jsonify({"email": userDoc.get().to_dict()["email"]})
     except Exception as e:
-        return jsonify(error = e.__str__(), errorcode = 400)
+        return jsonify(e.__str__())
     
     
 @app.route("/signin", methods = ['POST']) 
@@ -65,7 +65,7 @@ def sign_into_email():
     password = request.json.get('password', None)
     
     if(not email or not password):
-        return jsonify(error = 'Please fill out all fields', errorcode = 400)
+        return jsonify('Please fill out all fields', 400)
     
     
     try:
@@ -74,13 +74,13 @@ def sign_into_email():
         realPW = userInfo.get('password')
         if bcrypt.check_password_hash(realPW, password):
             #sign into queried account, set active sessionID to user
-            sessionID = fernet.encrypt(user.uid.encode())
+            sessionID = str(fernet.encrypt(user.uid.encode()))
             return {'sessionID' :sessionID}
         else:
             return("incorrect password")
         
     except Exception as e:
-        return jsonify(error = e.__str__(), errorcode = 400)
+        return jsonify(e.__str__())
 
 
 @app.route('/generate_paragraph', methods = ['GET'])
@@ -92,13 +92,14 @@ def get_paragraph():
         doc = db.collection("paragraphs").document(f"{id}").get()
         return jsonify(doc.to_dict())
     except Exception as e:
-        return jsonify(error = e.__str__(), errorcode = 400)
+        return f"Error: {e}"
     
 
 @app.route('/get_response', methods = ['POST'])
 def get_response():
     id = request.json.get('id', None)
     sessionID = request.json.get('sessionID', None)
+    sessionID = bytes(sessionID, 'utf-8')
     userID = fernet.decrypt(sessionID).decode();
     
     try:
