@@ -1,6 +1,7 @@
 import os
 import json
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 import firebase_admin
 from firebase_admin import firestore
@@ -14,18 +15,19 @@ from cryptography.fernet import Fernet
 __name__ = 'LearnApp' 
 
 app = Flask(__name__, instance_relative_config=True)
+CORS(app)
 bcrypt = Bcrypt(app)
 app.config.from_mapping(
     SECRET_KEY = 'absolute',
 )
 app.config.from_pyfile('config.py', silent=True)
 
-cred = credentials.Certificate("key.json")
+cred = credentials.Certificate("../key.json")
 
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-with open('fernetkey.txt', 'r') as file:
+with open('../fernetkey.txt', 'r') as file:
     fernetKey = file.read().rstrip()
         
 fernet = Fernet(fernetKey)
@@ -41,7 +43,7 @@ def register_email_password():
     password = request.json.get('password')
     
     if(not email or not password):
-        return("Please fill out all fields")
+        jsonify('Please fill out all fields', 400)
     
     try:
         user = auth.create_user(email = email, password = password)
@@ -63,7 +65,7 @@ def sign_into_email():
     password = request.json.get('password', None)
     
     if(not email or not password):
-        return("Please fill out all fields")
+        return jsonify('Please fill out all fields', 400)
     
     
     try:
@@ -103,19 +105,18 @@ def get_response():
         if id:
             resp = db.collection("responses").document(f"{id}").get().to_dict()
             if resp['author'] == userID:
-                return jsonify(resp)
+                return json.dumps(resp)
             else:
                 return "Unauthorized Access"
         else:
             docs = db.collection("responses").where(filter=FieldFilter("author", "==", userID)).stream()
             resps = {}
             for doc in docs:
-                resps[f'{doc.id}'] = doc.to_dict
+                resps[f'{doc.id}'] = doc.to_dict()
             json_data = json.dumps(resps);
-            return json_data
+            return resps
     except Exception as e:
         return f"Exception occured: {e}"
-
 
 
 @app.route('/analyze', methods = ['POST'])
@@ -139,9 +140,11 @@ def analyze():
             aiFeedback = aiResponse["model_response"]
             aiSemanticSimilarity = aiResponse["cosine_scores"]
             
+            resp = {'aiResponse':aiResponse, 'author':userId}
+            
             #store response in data
             doc = db.collection("responses").document()
-            doc.set(aiResponse)
+            doc.set(resp)
             id = doc.id
             
             #store response id with user(after getting active user with auth)
