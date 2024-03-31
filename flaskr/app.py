@@ -10,6 +10,7 @@ from firebase_admin import credentials
 from firebase_admin import auth
 import requests
 from datetime import datetime
+from random import Random
 
 
 __name__ = 'LearnApp' 
@@ -77,9 +78,12 @@ def sign_into_email():
 def get_paragraph():
     #given a paragraph id, probably random, making sure it isn't one the user hasn't read
     #return a paragraph JSON based on what we expect
-    id = 0
-    doc = db.collection("paragraphs").document(f"{id}").get()
-    return jsonify(doc.to_dict())
+    docs = db.collection("paragraphs").get()
+    c = len(docs)
+    random = Random()
+    i = random.randint(0, c-1)
+    return docs[i].to_dict()
+    
     
 
 @app.route('/get_response', methods = ['POST'])
