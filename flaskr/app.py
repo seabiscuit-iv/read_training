@@ -117,51 +117,48 @@ def get_response():
 def analyze():
     params = request.json   
     #upon submission of text, get response
-    try:
-        summary = params['summary']
-        textReadID = params['textReadID']
-        readTime = params['readTime']
-        readDuration = params['readDuration']
-        userId = params['sessionID']
-        sessionID = params.get('sessionID', None)
+    summary = params['summary']
+    textReadID = params['textReadID']
+    readTime = params['readTime']
+    readDuration = params['readDuration']
+    userId = params['sessionID']
+    sessionID = params.get('sessionID', None)
+    
+    if not sessionID: return jsonify("No active session")
+    
+    sessionID = bytes(sessionID, 'utf-8')
+    userId = sessionID
+    #summary = "hello" #for debugging
+    if(summary):
+        doc = db.collection("paragraphs").document(f"{textReadID}").get()
+        textRead = doc.to_dict()["text"]
+        #analyze summary, get JSON form response
+        response = json.dumps({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
+        aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response).json()
+        aiGeneratesdSummary = aiResponse["model_summary"]
+        aiFeedback = aiResponse["model_response"]
+        aiSemanticSimilarity = aiResponse["cosine_scores"]
         
-        if not sessionID: return jsonify("No active session")
+        resp = {'aiResponse':aiResponse, 'author':userId}
         
-        sessionID = bytes(sessionID, 'utf-8')
-        userId = sessionID
-        #summary = "hello" #for debugging
-        if(summary):
-            doc = db.collection("paragraphs").document(f"{textReadID}").get()
-            textRead = doc.to_dict()["text"]
-            #analyze summary, get JSON form response
-            response = json.dumps({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
-            aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response).json()
-            aiGeneratesdSummary = aiResponse["model_summary"]
-            aiFeedback = aiResponse["model_response"]
-            aiSemanticSimilarity = aiResponse["cosine_scores"]
-            
-            resp = {'aiResponse':aiResponse, 'author':userId}
-            
-            #store response in data
-            doc = db.collection("responses").document()
-            doc.set(resp)
-            id = doc.id
-            
-            #store response id with user(after getting active user with auth)
-            users = db.collection("users").document(f"{userId}").get().to_dict()
-            users['responses'].append(id)
-            
-            #model summary : the summary that the model generated,
-            #model_response : the feedback that the model provides, 
-            #semantic similarity : the feedback that the model provides
+        #store response in data
+        doc = db.collection("responses").document()
+        doc.set(resp)
+        id = doc.id
+        
+        #store response id with user(after getting active user with auth)
+        users = db.collection("users").document(f"{userId}").get().to_dict()
+        users['responses'].append(id)
+        
+        #model summary : the summary that the model generated,
+        #model_response : the feedback that the model provides, 
+        #semantic similarity : the feedback that the model provides
 
-            #return response
-            return aiResponse 
-        else:
-            #reload site and present error msg
-            return jsonify(f"Please submit a summary")
-    except Exception as e:
-        return jsonify(f"Error: {e}")
+        #return response
+        return aiResponse 
+    else:
+        #reload site and present error msg
+        return jsonify(f"Please submit a summary")
     
     
 @app.route ('/addText', methods = ['POST'])
