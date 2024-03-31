@@ -1,3 +1,4 @@
+from math import ceil
 import os
 import json
 from flask import Flask, request, jsonify, render_template
@@ -168,8 +169,14 @@ def analyze():
 @app.route ('/addText', methods = ['POST'])
 def addText():
     params = request.json
-    skinned = {'title': params['title'], 'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image'], 'topic':params['topic']}
+    text = params['text']
+    topic = params['topic']
+    title = params['title']
+    difficulty = requests.post("https://aladnamedpat--sentence-comparison-readability.modal.run/", json.dumps({'text':text})).json()['grade_level']
+    tags = requests.post("https://aladnamedpat--sentence-comparison-find-topics.modal.run/", json.dumps({'text':text})).json()['Passage_topics']
+    image = requests.post("https://andrewy8--stable-diffusion-xl-image-generation.modal.run", json.dumps({'text':text})).json()['url']
+    length = ceil(len(str.split(text, " "))/250)
+    skinned = {'title': title, 'difficulty':difficulty, 'text':text, 'length':length, 'image':image, 'topic':topic, 'tags':tags}
     db.collection("paragraphs").document().set(skinned)
-    return jsonify(f"Text added: {params['title']}")
-    return jsonify(f"Error: {e}")
+    return jsonify(f"Text added: {title}")
     
