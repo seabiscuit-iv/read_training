@@ -132,8 +132,8 @@ def analyze():
             doc = db.collection("paragraphs").document(f"{textReadID}").get()
             textRead = doc.to_dict()["text"]
             #analyze summary, get JSON form response
-            response = jsonify({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
-            aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response)
+            response = json.dumps({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
+            aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response).json()
             aiGeneratesdSummary = aiResponse["model_summary"]
             aiFeedback = aiResponse["model_response"]
             aiSemanticSimilarity = aiResponse["cosine_scores"]
