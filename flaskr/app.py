@@ -9,6 +9,7 @@ from google.cloud.firestore import FieldFilter
 from firebase_admin import credentials
 from firebase_admin import auth
 import requests
+from datetime import datetime
 
 
 __name__ = 'LearnApp' 
@@ -117,7 +118,8 @@ def analyze():
     #upon submission of text, get response
     summary = params['summary']
     textReadID = params['textReadID']
-    readTime = params['readTime']
+    readTime = datetime.now()
+    weekday = datetime.weekday()
     readDuration = params['readDuration']
     userId = params['sessionID']
     
@@ -133,7 +135,7 @@ def analyze():
         aiFeedback = aiResponse["model_response"]
         aiSemanticSimilarity = aiResponse["cosine_scores"]
         
-        resp = {'aiResponse':aiResponse, 'author':userId}
+        resp = {'aiResponse':aiResponse, 'author':userId, 'readTime':readTime, 'weekday':weekday}
 
         #store response in data
         doc = db.collection("responses").document()
@@ -141,7 +143,6 @@ def analyze():
         id = doc.id
         
         #store response id with user(after getting active user with auth)
-        print(userId)
         users = db.collection("users").document(str(userId)).get().to_dict()
         users['responses'].append(id)
         doc = db.collection("users").document(str(userId)).set(users)
@@ -151,7 +152,7 @@ def analyze():
         #semantic similarity : the feedback that the model provides
 
         #return response
-        return aiResponse 
+        return resp 
     else:
         #reload site and present error msg
         return jsonify(f"Please submit a summary")
