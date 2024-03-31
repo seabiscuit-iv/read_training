@@ -22,7 +22,7 @@ app.config.from_mapping(
 )
 app.config.from_pyfile('config.py', silent=True)
 
-cred = credentials.Certificate("./key.json")
+cred = credentials.Certificate("../key.json")
 
 default_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -103,11 +103,12 @@ def get_response():
                 return jsonify("Unauthorized Access")
         else:
             docs = db.collection("responses").where(filter=FieldFilter("author", "==", userID)).stream()
-            resps = {}
+            resps = []
             for doc in docs:
-                resps[f'{doc.id}'] = doc.to_dict()
-            json_data = json.dumps(resps);
-            return resps
+                m = doc.to_dict()
+                m['id'] = doc.id
+                resps.append(doc) 
+            return {'list':resps}
     except Exception as e:
         return jsonify(f"Exception occured: {e}")
 
@@ -119,15 +120,17 @@ def analyze():
     summary = params['summary']
     textReadID = params['textReadID']
     readTime = datetime.now()
-    weekday = datetime.weekday()
+    weekday = datetime.weekday(readTime)
     readDuration = params['readDuration']
     userId = params['sessionID']
     
     if not userId: return jsonify("No active session")
     #summary = "hello" #for debugging
     if(summary):
-        doc = db.collection("paragraphs").document(f"{textReadID}").get()
+        doc = db.collection("paragraphs").document(textReadID).get()
+        id = doc.id
         textRead = doc.to_dict()["text"]
+        title = doc.to_dict()["title"]
         #analyze summary, get JSON form response
         response = json.dumps({"user_input" : summary, "text" : textRead}) #textRead needs to be sent as input to the user
         aiResponse = requests.post("https://aladnamedpat--sentence-comparison-response.modal.run/", data=response).json()
@@ -135,7 +138,7 @@ def analyze():
         aiFeedback = aiResponse["model_response"]
         aiSemanticSimilarity = aiResponse["cosine_scores"]
         
-        resp = {'aiResponse':aiResponse, 'author':userId, 'readTime':readTime, 'weekday':weekday}
+        resp = {'aiResponse':aiResponse, 'id':id, 'title':title, 'author':userId, 'readTime':readTime, 'weekday':weekday, }
 
         #store response in data
         doc = db.collection("responses").document()
@@ -162,8 +165,8 @@ def analyze():
 def addText():
     params = request.json
     try:
-        skinned = {'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image']}
-        db.collection("paragraphs").document(params['title']).set(skinned)
+        skinned = {'title': params['title'], 'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image']}
+        db.collection("paragraphs").document().set(skinned)
         return jsonify(f"Text added: {params['title']}")
     except Exception as e:
         return jsonify(f"Error: {e}")
