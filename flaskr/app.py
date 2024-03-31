@@ -66,8 +66,7 @@ def sign_into_email():
     
     if(not email or not password):
         return jsonify('Please fill out all fields', 400)
-    
-    
+
     try:
         user = auth.get_user_by_email(email = email)
         userInfo = db.collection("users").document(user.uid).get()
@@ -77,7 +76,7 @@ def sign_into_email():
             sessionID = str(fernet.encrypt(user.uid.encode()))
             return {'sessionID' :sessionID}
         else:
-            return("incorrect password")
+            return jsonify("incorrect password")
         
     except Exception as e:
         return jsonify(e.__str__())
@@ -92,7 +91,7 @@ def get_paragraph():
         doc = db.collection("paragraphs").document(f"{id}").get()
         return jsonify(doc.to_dict())
     except Exception as e:
-        return f"Error: {e}"
+        return jsonify(f"Error: {e}")
     
 
 @app.route('/get_response', methods = ['POST'])
@@ -108,7 +107,7 @@ def get_response():
             if resp['author'] == userID:
                 return json.dumps(resp)
             else:
-                return "Unauthorized Access"
+                return jsonify("Unauthorized Access")
         else:
             docs = db.collection("responses").where(filter=FieldFilter("author", "==", userID)).stream()
             resps = {}
@@ -117,7 +116,7 @@ def get_response():
             json_data = json.dumps(resps);
             return resps
     except Exception as e:
-        return f"Exception occured: {e}"
+        return jsonify(f"Exception occured: {e}")
 
 
 @app.route('/analyze', methods = ['POST'])
@@ -129,7 +128,13 @@ def analyze():
         textReadID = params['textReadID']
         readTime = params['readTime']
         readDuration = params['readDuration']
-        userId = params['userId']
+        userId = params['sessionID']
+        sessionID = params.get('sessionID', None)
+        
+        if not sessionID: return jsonify("No active session")
+        
+        sessionID = bytes(sessionID, 'utf-8')
+        userId = fernet.decrypt(sessionID).decode();
         #summary = "hello" #for debugging
         if(summary):
             doc = db.collection("paragraphs").document(f"{textReadID}").get()
@@ -149,7 +154,8 @@ def analyze():
             id = doc.id
             
             #store response id with user(after getting active user with auth)
-            
+            users = db.collection("users").document(f"{userId}").get().to_dict()
+            users['responses'].append(id)
             
             #model summary : the summary that the model generated,
             #model_response : the feedback that the model provides, 
@@ -159,9 +165,9 @@ def analyze():
             return aiResponse 
         else:
             #reload site and present error msg
-            return f"Please submit a summary"
+            return jsonify(f"Please submit a summary")
     except Exception as e:
-        return f"Error: {e}" 
+        return jsonify(f"Error: {e}")
     
     
 @app.route ('/addText', methods = ['POST'])
@@ -170,7 +176,7 @@ def addText():
     try:
         skinned = {'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image']}
         db.collection("paragraphs").document(params['title']).set(skinned)
-        return f"Text added: {params['title']}"
+        return jsonify(f"Text added: {params['title']}")
     except Exception as e:
-        return f"Error: {e}"
+        return jsonify(f"Error: {e}")
     
