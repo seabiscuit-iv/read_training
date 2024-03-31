@@ -148,7 +148,7 @@ def analyze():
         
         #store response id with user(after getting active user with auth)
         print(userId)
-        users = db.collection("users").document(str(userId))
+        users = db.collection("users").document("YhP55lkNjVg9Je3DJROGcwibJij1")
         sm = users.get().to_dict()
         print(sm)
         # sm['responses']
