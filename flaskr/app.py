@@ -39,19 +39,16 @@ def register_email_password():
     
     if(not email or not password):
         jsonify('Please fill out all fields', 400)
+        
+    user = auth.create_user(email = email, password = password)
     
-    try:
-        user = auth.create_user(email = email, password = password)
-        
-        password = bcrypt.generate_password_hash(password=password)
-        userInfo = {"email": email, "password": password, "responses": [], "goal": 0} #etc
-        
-        userDoc = db.collection("users").document(user.uid)
-        userDoc.set(userInfo);
-        print(userDoc.get().to_dict())
-        return jsonify({"email": userDoc.get().to_dict()["email"]})
-    except Exception as e:
-        return jsonify(e.__str__())
+    password = bcrypt.generate_password_hash(password=password)
+    userInfo = {"email": email, "password": password, "responses": [], "goal": 0} #etc
+    
+    userDoc = db.collection("users").document(user.uid)
+    userDoc.set(userInfo);
+    print(userDoc.get().to_dict())
+    return jsonify({"email": userDoc.get().to_dict()["email"]})
     
     
 @app.route("/signin", methods = ['POST']) 
@@ -62,19 +59,18 @@ def sign_into_email():
     if(not email or not password):
         return jsonify('Please fill out all fields', 400)
 
-    try:
-        user = auth.get_user_by_email(email = email)
-        userInfo = db.collection("users").document(user.uid).get()
-        realPW = userInfo.get('password')
-        if bcrypt.check_password_hash(realPW, password):
-            #sign into queried account, set active sessionID to user
-            sessionID = user.uid
-            return {'sessionID' :sessionID}
-        else:
-            return jsonify("incorrect password")
-        
-    except Exception as e:
-        return jsonify(e.__str__())
+
+    user = auth.get_user_by_email(email = email)
+    userInfo = db.collection("users").document(user.uid).get()
+    realPW = userInfo.get('password')
+    if bcrypt.check_password_hash(realPW, password):
+        #sign into queried account, set active sessionID to user
+        sessionID = user.uid
+        return {'sessionID' :sessionID}
+    else:
+        return jsonify("incorrect password")
+    
+    return jsonify(e.__str__())
 
 
 @app.route('/generate_paragraph', methods = ['GET'])
@@ -82,35 +78,29 @@ def get_paragraph():
     #given a paragraph id, probably random, making sure it isn't one the user hasn't read
     #return a paragraph JSON based on what we expect
     id = 0
-    try:
-        doc = db.collection("paragraphs").document(f"{id}").get()
-        return jsonify(doc.to_dict())
-    except Exception as e:
-        return jsonify(f"Error: {e}")
+    doc = db.collection("paragraphs").document(f"{id}").get()
+    return jsonify(doc.to_dict())
     
 
 @app.route('/get_response', methods = ['POST'])
 def get_response():
     id = request.json.get('id', None)
     userID = request.json.get('sessionID', None)
-    
-    try:
-        if id:
-            resp = db.collection("responses").document(f"{id}").get().to_dict()
-            if resp['author'] == userID:
-                return json.dumps(resp)
-            else:
-                return jsonify("Unauthorized Access")
+
+    if id:
+        resp = db.collection("responses").document(f"{id}").get().to_dict()
+        if resp['author'] == userID:
+            return json.dumps(resp)
         else:
-            docs = db.collection("responses").where(filter=FieldFilter("author", "==", userID)).stream()
-            resps = []
-            for doc in docs:
-                m = doc.to_dict()
-                m['id'] = doc.id
-                resps.append(doc) 
-            return {'list':resps}
-    except Exception as e:
-        return jsonify(f"Exception occured: {e}")
+            return jsonify("Unauthorized Access")
+    else:
+        docs = db.collection("responses").where(filter=FieldFilter("author", "==", userID)).stream()
+        resps = []
+        for doc in docs:
+            m = doc.to_dict()
+            m['id'] = doc.id
+            resps.append(doc) 
+        return {'list':resps}
 
 
 @app.route('/analyze', methods = ['POST'])
@@ -164,10 +154,8 @@ def analyze():
 @app.route ('/addText', methods = ['POST'])
 def addText():
     params = request.json
-    try:
-        skinned = {'title': params['title'], 'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image']}
-        db.collection("paragraphs").document().set(skinned)
-        return jsonify(f"Text added: {params['title']}")
-    except Exception as e:
-        return jsonify(f"Error: {e}")
+    skinned = {'title': params['title'], 'difficulty':params['difficulty'], 'text':params['text'], 'length':params['length'], 'image':params['image']}
+    db.collection("paragraphs").document().set(skinned)
+    return jsonify(f"Text added: {params['title']}")
+    return jsonify(f"Error: {e}")
     
